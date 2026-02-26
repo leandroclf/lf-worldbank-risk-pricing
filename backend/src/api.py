@@ -106,3 +106,11 @@ def estimate_high_risk_rate(entries, threshold=75):
         return 0.0
     cnt = count_high_risk_countries(entries, threshold)
     return round(cnt["highRisk"] / cnt["total"], 4)
+
+
+def calculate_multiplier_delta(entries, baseline_multiplier):
+    """Return percentage-point improvement vs baseline average multiplier."""
+    if baseline_multiplier <= 0:
+        return 0.0
+    current = score_pricing_portfolio(entries)["avgMultiplier"] if entries else 1.0
+    return round((current - baseline_multiplier) / baseline_multiplier * 100, 2)

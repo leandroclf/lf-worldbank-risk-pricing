@@ -51,6 +51,7 @@ from backend.src.api import estimate_portfolio_adjustment_pct
 from backend.src.api import summarize_pricing_tiers_with_multiplier
 from backend.src.api import count_high_risk_countries
 from backend.src.api import estimate_high_risk_rate
+from backend.src.api import calculate_multiplier_delta
 
 
 def test_build_pricing_decision():
@@ -144,3 +145,17 @@ def test_estimate_high_risk_rate():
 
 def test_estimate_high_risk_rate_empty():
     assert estimate_high_risk_rate([], threshold=75) == 0.0
+
+
+def test_calculate_multiplier_delta():
+    entries = [
+        {"countryCode": "br", "riskScore": 80},
+        {"countryCode": "cl", "riskScore": 55},
+        {"countryCode": "uy", "riskScore": 30},
+    ]
+    delta = calculate_multiplier_delta(entries, baseline_multiplier=1.02)
+    assert delta == 1.64
+
+
+def test_calculate_multiplier_delta_zero_baseline():
+    assert calculate_multiplier_delta([{"countryCode": "br", "riskScore": 80}], baseline_multiplier=0) == 0.0
