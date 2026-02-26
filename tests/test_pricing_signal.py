@@ -45,6 +45,7 @@ def test_compute_pricing_multiplier():
 
 
 from backend.src.api import build_pricing_decision
+from backend.src.api import score_pricing_portfolio
 
 
 def test_build_pricing_decision():
@@ -52,3 +53,16 @@ def test_build_pricing_decision():
     assert d["countryCode"] == "BR"
     assert d["tier"] == "high"
     assert d["adjustmentPct"] == 8
+
+
+def test_score_pricing_portfolio():
+    p = score_pricing_portfolio([
+        {"countryCode": "br", "riskScore": 80},
+        {"countryCode": "cl", "riskScore": 55},
+        {"countryCode": "uy", "riskScore": 30},
+    ])
+    assert p == {"total": 3, "highRiskCount": 1, "avgMultiplier": 1.0367}
+
+
+def test_score_pricing_portfolio_empty():
+    assert score_pricing_portfolio([]) == {"total": 0, "highRiskCount": 0, "avgMultiplier": 1.0}

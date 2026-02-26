@@ -49,3 +49,19 @@ def build_pricing_decision(country_code, risk_score):
     adj = build_pricing_adjustment(risk_score)
     resp.update({"tier": adj["tier"], "adjustmentPct": adj["adjustmentPct"]})
     return resp
+
+
+def score_pricing_portfolio(entries):
+    """Aggregate pricing decisions for a country/risk portfolio."""
+    if not entries:
+        return {"total": 0, "highRiskCount": 0, "avgMultiplier": 1.0}
+
+    decisions = [build_pricing_decision(e["countryCode"], e["riskScore"]) for e in entries]
+    multipliers = [compute_pricing_multiplier(e["riskScore"]) for e in entries]
+    high_risk = sum(1 for d in decisions if d["tier"] == "high")
+
+    return {
+        "total": len(entries),
+        "highRiskCount": high_risk,
+        "avgMultiplier": round(sum(multipliers) / len(multipliers), 4),
+    }
