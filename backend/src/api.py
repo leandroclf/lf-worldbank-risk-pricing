@@ -82,3 +82,12 @@ def estimate_portfolio_adjustment_pct(entries):
         return 0.0
     adjs = [build_pricing_adjustment(e.get("riskScore", 0))["adjustmentPct"] for e in entries]
     return round(sum(adjs) / len(adjs), 2)
+
+
+def summarize_pricing_tiers_with_multiplier(entries):
+    """Combine tier counts with portfolio average multiplier."""
+    bands = summarize_country_risk_bands(entries)
+    return {
+        "bands": bands,
+        "avgMultiplier": score_pricing_portfolio(entries)["avgMultiplier"] if entries else 1.0,
+    }

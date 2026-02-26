@@ -48,6 +48,7 @@ from backend.src.api import build_pricing_decision
 from backend.src.api import score_pricing_portfolio
 from backend.src.api import summarize_country_risk_bands
 from backend.src.api import estimate_portfolio_adjustment_pct
+from backend.src.api import summarize_pricing_tiers_with_multiplier
 
 
 def test_build_pricing_decision():
@@ -95,3 +96,22 @@ def test_estimate_portfolio_adjustment_pct():
 
 def test_estimate_portfolio_adjustment_pct_empty():
     assert estimate_portfolio_adjustment_pct([]) == 0.0
+
+
+def test_summarize_pricing_tiers_with_multiplier():
+    out = summarize_pricing_tiers_with_multiplier([
+        {"countryCode": "br", "riskScore": 80},
+        {"countryCode": "cl", "riskScore": 55},
+        {"countryCode": "uy", "riskScore": 30},
+    ])
+    assert out == {
+        "bands": {"high": 1, "medium": 1, "low": 1},
+        "avgMultiplier": 1.0367,
+    }
+
+
+def test_summarize_pricing_tiers_with_multiplier_empty():
+    assert summarize_pricing_tiers_with_multiplier([]) == {
+        "bands": {"high": 0, "medium": 0, "low": 0},
+        "avgMultiplier": 1.0,
+    }
