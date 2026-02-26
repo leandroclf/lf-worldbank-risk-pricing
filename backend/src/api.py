@@ -91,3 +91,10 @@ def summarize_pricing_tiers_with_multiplier(entries):
         "bands": bands,
         "avgMultiplier": score_pricing_portfolio(entries)["avgMultiplier"] if entries else 1.0,
     }
+
+
+def count_high_risk_countries(entries, threshold=75):
+    """Count countries with risk score above high-risk threshold."""
+    total = len(entries or [])
+    high = sum(1 for e in (entries or []) if float(e.get("riskScore", 0)) >= float(threshold))
+    return {"threshold": float(threshold), "total": total, "highRisk": high}
