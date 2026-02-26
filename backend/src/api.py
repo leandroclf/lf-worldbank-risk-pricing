@@ -27,3 +27,11 @@ def build_risk_score_response(country_code, risk_score):
 def is_valid_country_code(code):
     c=str(code).strip()
     return len(c)==2 and c.isalpha()
+
+
+
+def build_pricing_adjustment(risk_score):
+    s=float(risk_score)
+    if s >= 75: return {"tier":"high","adjustmentPct": 8}
+    if s >= 50: return {"tier":"medium","adjustmentPct": 3}
+    return {"tier":"low","adjustmentPct": 0}

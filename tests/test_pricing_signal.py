@@ -24,3 +24,12 @@ def test_is_valid_country_code():
     assert is_valid_country_code("BR") is True
     assert is_valid_country_code("b") is False
     assert is_valid_country_code("123") is False
+
+
+from backend.src.api import build_pricing_adjustment
+
+
+def test_build_pricing_adjustment():
+    assert build_pricing_adjustment(80)["tier"] == "high"
+    assert build_pricing_adjustment(60)["adjustmentPct"] == 3
+    assert build_pricing_adjustment(30)["adjustmentPct"] == 0
