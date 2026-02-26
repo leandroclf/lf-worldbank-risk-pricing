@@ -35,3 +35,9 @@ def build_pricing_adjustment(risk_score):
     if s >= 75: return {"tier":"high","adjustmentPct": 8}
     if s >= 50: return {"tier":"medium","adjustmentPct": 3}
     return {"tier":"low","adjustmentPct": 0}
+
+
+
+def compute_pricing_multiplier(risk_score):
+    adj = build_pricing_adjustment(risk_score)["adjustmentPct"]
+    return round(1 + (adj / 100), 4)

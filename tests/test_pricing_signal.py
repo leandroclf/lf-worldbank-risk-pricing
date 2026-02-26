@@ -33,3 +33,12 @@ def test_build_pricing_adjustment():
     assert build_pricing_adjustment(80)["tier"] == "high"
     assert build_pricing_adjustment(60)["adjustmentPct"] == 3
     assert build_pricing_adjustment(30)["adjustmentPct"] == 0
+
+
+from backend.src.api import compute_pricing_multiplier
+
+
+def test_compute_pricing_multiplier():
+    assert compute_pricing_multiplier(80) == 1.08
+    assert compute_pricing_multiplier(60) == 1.03
+    assert compute_pricing_multiplier(20) == 1.0
