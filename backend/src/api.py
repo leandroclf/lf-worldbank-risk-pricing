@@ -21,3 +21,9 @@ def build_risk_score_response(country_code, risk_score):
         "riskScore": float(risk_score),
         "sourceAttribution": "World Bank (CC BY 4.0)",
     }
+
+
+
+def is_valid_country_code(code):
+    c=str(code).strip()
+    return len(c)==2 and c.isalpha()

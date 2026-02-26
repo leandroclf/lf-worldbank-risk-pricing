@@ -15,3 +15,12 @@ def test_build_risk_score_response():
     assert r["countryCode"] == "BR"
     assert r["riskScore"] == 72.5
     assert "World Bank" in r["sourceAttribution"]
+
+
+from backend.src.api import is_valid_country_code
+
+
+def test_is_valid_country_code():
+    assert is_valid_country_code("BR") is True
+    assert is_valid_country_code("b") is False
+    assert is_valid_country_code("123") is False
