@@ -50,6 +50,7 @@ from backend.src.api import summarize_country_risk_bands
 from backend.src.api import estimate_portfolio_adjustment_pct
 from backend.src.api import summarize_pricing_tiers_with_multiplier
 from backend.src.api import count_high_risk_countries
+from backend.src.api import estimate_high_risk_rate
 
 
 def test_build_pricing_decision():
@@ -129,3 +130,17 @@ def test_count_high_risk_countries():
 
 def test_count_high_risk_countries_empty():
     assert count_high_risk_countries([], threshold=75) == {"threshold": 75.0, "total": 0, "highRisk": 0}
+
+
+def test_estimate_high_risk_rate():
+    out = estimate_high_risk_rate([
+        {"countryCode": "br", "riskScore": 80},
+        {"countryCode": "cl", "riskScore": 55},
+        {"countryCode": "ar", "riskScore": 90},
+        {"countryCode": "uy", "riskScore": 30},
+    ], threshold=75)
+    assert out == 0.5
+
+
+def test_estimate_high_risk_rate_empty():
+    assert estimate_high_risk_rate([], threshold=75) == 0.0

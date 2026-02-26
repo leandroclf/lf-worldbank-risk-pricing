@@ -98,3 +98,11 @@ def count_high_risk_countries(entries, threshold=75):
     total = len(entries or [])
     high = sum(1 for e in (entries or []) if float(e.get("riskScore", 0)) >= float(threshold))
     return {"threshold": float(threshold), "total": total, "highRisk": high}
+
+
+def estimate_high_risk_rate(entries, threshold=75):
+    """Return share of countries in high-risk category."""
+    if not entries:
+        return 0.0
+    cnt = count_high_risk_countries(entries, threshold)
+    return round(cnt["highRisk"] / cnt["total"], 4)
