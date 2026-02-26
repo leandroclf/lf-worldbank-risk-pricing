@@ -41,3 +41,11 @@ def build_pricing_adjustment(risk_score):
 def compute_pricing_multiplier(risk_score):
     adj = build_pricing_adjustment(risk_score)["adjustmentPct"]
     return round(1 + (adj / 100), 4)
+
+
+
+def build_pricing_decision(country_code, risk_score):
+    resp = build_risk_score_response(country_code, risk_score)
+    adj = build_pricing_adjustment(risk_score)
+    resp.update({"tier": adj["tier"], "adjustmentPct": adj["adjustmentPct"]})
+    return resp

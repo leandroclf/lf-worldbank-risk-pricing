@@ -42,3 +42,13 @@ def test_compute_pricing_multiplier():
     assert compute_pricing_multiplier(80) == 1.08
     assert compute_pricing_multiplier(60) == 1.03
     assert compute_pricing_multiplier(20) == 1.0
+
+
+from backend.src.api import build_pricing_decision
+
+
+def test_build_pricing_decision():
+    d = build_pricing_decision("br", 78)
+    assert d["countryCode"] == "BR"
+    assert d["tier"] == "high"
+    assert d["adjustmentPct"] == 8
