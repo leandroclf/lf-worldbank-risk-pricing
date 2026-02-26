@@ -159,3 +159,28 @@ def test_calculate_multiplier_delta():
 
 def test_calculate_multiplier_delta_zero_baseline():
     assert calculate_multiplier_delta([{"countryCode": "br", "riskScore": 80}], baseline_multiplier=0) == 0.0
+
+
+def test_aggregate_regional_risk_empty():
+    from backend.src.api import aggregate_regional_risk
+    result = aggregate_regional_risk([])
+    assert result["stats"]["total_countries"] == 0
+
+
+def test_aggregate_regional_risk_with_data():
+    from backend.src.api import aggregate_regional_risk
+    countries = [
+        {"country_code": "BR", "risk_score": 0.4},
+        {"country_code": "US", "risk_score": 0.1}
+    ]
+    result = aggregate_regional_risk(countries)
+    assert "LATAM" in result["regions"]
+    assert "NA" in result["regions"]
+
+
+def test_portfolio_exposure():
+    from backend.src.api import calculate_portfolio_exposure
+    positions = [{"country_code": "BR", "value": 1000}]
+    risk_data = [{"country_code": "BR", "risk_score": 0.6}]
+    result = calculate_portfolio_exposure(positions, risk_data)
+    assert result["positions_at_risk"] == 1

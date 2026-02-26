@@ -114,3 +114,90 @@ def calculate_multiplier_delta(entries, baseline_multiplier):
         return 0.0
     current = score_pricing_portfolio(entries)["avgMultiplier"] if entries else 1.0
     return round((current - baseline_multiplier) / baseline_multiplier * 100, 2)
+
+
+def aggregate_regional_risk(countries, region_mapping=None):
+    """
+    Aggregate country risk scores by region for portfolio analysis.
+    Returns regional risk summary with weighted averages.
+    """
+    if not countries:
+        return {"regions": {}, "stats": {"total_countries": 0, "regions_count": 0}}
+    
+    default_regions = {
+        "LATAM": ["BR", "MX", "AR", "CL", "CO"],
+        "EMEA": ["DE", "FR", "GB", "IT", "ES", "ZA", "NG"],
+        "APAC": ["CN", "JP", "IN", "AU", "KR", "SG"],
+        "NA": ["US", "CA"]
+    }
+    mapping = region_mapping or default_regions
+    
+    # Invert mapping for lookup
+    country_to_region = {}
+    for region, codes in mapping.items():
+        for code in codes:
+            country_to_region[code] = region
+    
+    region_data = {}
+    for country in countries:
+        code = country.get("country_code", "")
+        risk = country.get("risk_score", 0)
+        region = country_to_region.get(code, "OTHER")
+        
+        if region not in region_data:
+            region_data[region] = {"scores": [], "count": 0}
+        region_data[region]["scores"].append(risk)
+        region_data[region]["count"] += 1
+    
+    regions_summary = {}
+    for region, data in region_data.items():
+        scores = data["scores"]
+        regions_summary[region] = {
+            "avg_risk": round(sum(scores) / len(scores), 3) if scores else 0,
+            "max_risk": max(scores) if scores else 0,
+            "min_risk": min(scores) if scores else 0,
+            "country_count": data["count"]
+        }
+    
+    return {
+        "regions": regions_summary,
+        "stats": {
+            "total_countries": len(countries),
+            "regions_count": len(regions_summary)
+        }
+    }
+
+
+def calculate_portfolio_exposure(positions, risk_data):
+    """
+    Calculate weighted portfolio exposure to country risk.
+    Returns exposure metrics and risk-adjusted values.
+    """
+    if not positions or not risk_data:
+        return {"exposure": 0.0, "risk_adjusted_value": 0.0, "positions_at_risk": 0}
+    
+    risk_lookup = {r.get("country_code"): r.get("risk_score", 0) for r in risk_data}
+    
+    total_value = 0
+    weighted_risk = 0
+    positions_at_risk = 0
+    
+    for pos in positions:
+        value = pos.get("value", 0)
+        country = pos.get("country_code", "")
+        risk = risk_lookup.get(country, 0)
+        
+        total_value += value
+        weighted_risk += value * risk
+        if risk > 0.5:
+            positions_at_risk += 1
+    
+    exposure = weighted_risk / total_value if total_value > 0 else 0
+    risk_adjusted = total_value * (1 - exposure)
+    
+    return {
+        "exposure": round(exposure, 4),
+        "risk_adjusted_value": round(risk_adjusted, 2),
+        "positions_at_risk": positions_at_risk,
+        "total_positions": len(positions)
+    }
