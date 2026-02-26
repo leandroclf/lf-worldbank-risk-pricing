@@ -47,6 +47,7 @@ def test_compute_pricing_multiplier():
 from backend.src.api import build_pricing_decision
 from backend.src.api import score_pricing_portfolio
 from backend.src.api import summarize_country_risk_bands
+from backend.src.api import estimate_portfolio_adjustment_pct
 
 
 def test_build_pricing_decision():
@@ -81,3 +82,16 @@ def test_summarize_country_risk_bands():
 
 def test_summarize_country_risk_bands_empty():
     assert summarize_country_risk_bands([]) == {"high": 0, "medium": 0, "low": 0}
+
+
+def test_estimate_portfolio_adjustment_pct():
+    out = estimate_portfolio_adjustment_pct([
+        {"countryCode": "br", "riskScore": 80},
+        {"countryCode": "cl", "riskScore": 55},
+        {"countryCode": "uy", "riskScore": 30},
+    ])
+    assert out == 3.67
+
+
+def test_estimate_portfolio_adjustment_pct_empty():
+    assert estimate_portfolio_adjustment_pct([]) == 0.0

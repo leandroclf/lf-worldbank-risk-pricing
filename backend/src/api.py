@@ -74,3 +74,11 @@ def summarize_country_risk_bands(entries):
         tier = build_pricing_adjustment(e.get("riskScore", 0))["tier"]
         bands[tier] += 1
     return bands
+
+
+def estimate_portfolio_adjustment_pct(entries):
+    """Average adjustment percentage across a portfolio."""
+    if not entries:
+        return 0.0
+    adjs = [build_pricing_adjustment(e.get("riskScore", 0))["adjustmentPct"] for e in entries]
+    return round(sum(adjs) / len(adjs), 2)
