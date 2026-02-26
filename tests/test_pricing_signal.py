@@ -46,6 +46,7 @@ def test_compute_pricing_multiplier():
 
 from backend.src.api import build_pricing_decision
 from backend.src.api import score_pricing_portfolio
+from backend.src.api import summarize_country_risk_bands
 
 
 def test_build_pricing_decision():
@@ -66,3 +67,17 @@ def test_score_pricing_portfolio():
 
 def test_score_pricing_portfolio_empty():
     assert score_pricing_portfolio([]) == {"total": 0, "highRiskCount": 0, "avgMultiplier": 1.0}
+
+
+def test_summarize_country_risk_bands():
+    out = summarize_country_risk_bands([
+        {"countryCode": "br", "riskScore": 80},
+        {"countryCode": "cl", "riskScore": 55},
+        {"countryCode": "uy", "riskScore": 30},
+        {"countryCode": "ar", "riskScore": 90},
+    ])
+    assert out == {"high": 2, "medium": 1, "low": 1}
+
+
+def test_summarize_country_risk_bands_empty():
+    assert summarize_country_risk_bands([]) == {"high": 0, "medium": 0, "low": 0}

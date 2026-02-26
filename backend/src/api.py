@@ -65,3 +65,12 @@ def score_pricing_portfolio(entries):
         "highRiskCount": high_risk,
         "avgMultiplier": round(sum(multipliers) / len(multipliers), 4),
     }
+
+
+def summarize_country_risk_bands(entries):
+    """Return counts by risk tier for proposal-level reporting."""
+    bands = {"high": 0, "medium": 0, "low": 0}
+    for e in entries or []:
+        tier = build_pricing_adjustment(e.get("riskScore", 0))["tier"]
+        bands[tier] += 1
+    return bands
