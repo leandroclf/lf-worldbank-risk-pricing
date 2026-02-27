@@ -201,3 +201,20 @@ def calculate_portfolio_exposure(positions, risk_data):
         "positions_at_risk": positions_at_risk,
         "total_positions": len(positions)
     }
+
+
+def get_portfolio_risk_summary(portfolio_results):
+    """
+    Summarize multiple portfolio risk analyses for reporting.
+    """
+    if not portfolio_results:
+        return {"total_portfolios": 0, "avg_exposure": 0.0, "total_at_risk": 0}
+    
+    total_exposure = sum(p.get("exposure", 0) for p in portfolio_results)
+    total_at_risk = sum(p.get("positions_at_risk", 0) for p in portfolio_results)
+    
+    return {
+        "total_portfolios": len(portfolio_results),
+        "avg_exposure": round(total_exposure / len(portfolio_results), 4),
+        "total_at_risk": total_at_risk
+    }
