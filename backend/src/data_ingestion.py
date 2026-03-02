@@ -68,6 +68,27 @@ def get_current_year_risk(country_code: str) -> float | None:
             
     return None
 
+def fetch_multiple_country_risk_data(country_codes: list[str]) -> list[dict]:
+    """
+    Fetches the most recent risk indicator for a list of country codes.
+
+    Args:
+        country_codes (list[str]): A list of 2-letter ISO country codes.
+
+    Returns:
+        list[dict]: A list of dictionaries, where each dictionary contains
+                    "country_code" and "risk_score" for each successfully
+                    fetched country.
+    """
+    results = []
+    for code in country_codes:
+        risk_value = get_current_year_risk(code)
+        if risk_value is not None:
+            results.append({"country_code": code, "risk_score": risk_value})
+        else:
+            print(f"Warning: Could not retrieve risk premium for {code}.")
+    return results
+
 if __name__ == "__main__":
     # Example Usage:
     print("Fetching risk indicator for Brazil (BR) for 2023:")
@@ -97,3 +118,8 @@ if __name__ == "__main__":
         print(f"XX risk premium (2023): {risk_xx}")
     else:
         print("Could not retrieve risk premium for XX for 2023.")
+
+    print("\nFetching multiple country risk data for BR, US, DE, FR:")
+    countries_to_fetch = ["BR", "US", "DE", "FR", "XX"]
+    multi_country_risk = fetch_multiple_country_risk_data(countries_to_fetch)
+    print(f"Multi-country risk data: {multi_country_risk}")
