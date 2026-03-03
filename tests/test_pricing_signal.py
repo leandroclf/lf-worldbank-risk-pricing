@@ -178,9 +178,81 @@ def test_aggregate_regional_risk_with_data():
     assert "NA" in result["regions"]
 
 
+def test_aggregate_regional_risk_normalizes_country_code_case():
+    from backend.src.api import aggregate_regional_risk
+    countries = [
+        {"country_code": "br", "risk_score": 0.4},
+        {"country_code": "us", "risk_score": "0.1"}
+    ]
+    result = aggregate_regional_risk(countries)
+    assert "LATAM" in result["regions"]
+    assert "NA" in result["regions"]
+    assert result["regions"]["NA"]["avg_risk"] == 0.1
+
+
+def test_aggregate_regional_risk_invalid_score_defaults_to_zero():
+    from backend.src.api import aggregate_regional_risk
+    countries = [
+        {"country_code": "BR", "risk_score": "N/A"},
+        {"country_code": "US", "risk_score": 0.2},
+    ]
+    result = aggregate_regional_risk(countries)
+    assert result["regions"]["LATAM"]["avg_risk"] == 0.0
+    assert result["regions"]["NA"]["avg_risk"] == 0.2
+
+
 def test_portfolio_exposure():
     from backend.src.api import calculate_portfolio_exposure
     positions = [{"country_code": "BR", "value": 1000}]
     risk_data = [{"country_code": "BR", "risk_score": 0.6}]
     result = calculate_portfolio_exposure(positions, risk_data)
     assert result["positions_at_risk"] == 1
+
+
+def test_portfolio_exposure_normalizes_country_code_case():
+    from backend.src.api import calculate_portfolio_exposure
+    positions = [{"country_code": "br", "value": "1000"}]
+    risk_data = [{"country_code": "BR", "risk_score": "0.6"}]
+    result = calculate_portfolio_exposure(positions, risk_data)
+    assert result["positions_at_risk"] == 1
+    assert result["exposure"] == 0.6
+
+
+def test_portfolio_exposure_invalid_numeric_fields_do_not_break():
+    from backend.src.api import calculate_portfolio_exposure
+    positions = [{"country_code": "BR", "value": "invalid"}]
+    risk_data = [{"country_code": "BR", "risk_score": "N/A"}]
+    result = calculate_portfolio_exposure(positions, risk_data)
+    assert result["positions_at_risk"] == 0
+    assert result["exposure"] == 0
+
+
+def test_build_pricing_quote():
+    from backend.src.api import build_pricing_quote
+
+    quote = build_pricing_quote(country_code="br", risk_score=80, base_price=1000, currency="brl")
+    assert quote["countryCode"] == "BR"
+    assert quote["tier"] == "high"
+    assert quote["adjustmentPct"] == 8
+    assert quote["multiplier"] == 1.08
+    assert quote["finalPrice"] == 1080.0
+    assert quote["currency"] == "BRL"
+
+
+def test_build_pricing_bands_response():
+    from backend.src.api import build_pricing_bands_response
+
+    payload = build_pricing_bands_response(
+        [
+            {"countryCode": "BR", "riskScore": 80},
+            {"countryCode": "US", "riskScore": 40},
+            {"countryCode": "AR", "riskScore": 60},
+        ],
+        high_risk_threshold=75,
+    )
+    assert payload["issue"] == "ISSUE-003"
+    assert payload["total"] == 3
+    assert payload["bands"]["high"] == 1
+    assert payload["bands"]["medium"] == 1
+    assert payload["bands"]["low"] == 1
+    assert payload["highRisk"]["highRisk"] == 1

@@ -1,5 +1,14 @@
 from datetime import datetime, timezone
 
+
+def _to_float(value, default=0.0):
+    """Best-effort float coercion used by risk/pricing helpers."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return float(default)
+
+
 def get_sample_payload():
     return {
         "component": "lf-worldbank-risk-pricing",
@@ -18,7 +27,7 @@ def build_risk_score_response(country_code, risk_score):
     return {
         "issue": "ISSUE-003",
         "countryCode": country_code.upper(),
-        "riskScore": float(risk_score),
+        "riskScore": _to_float(risk_score),
         "sourceAttribution": "World Bank (CC BY 4.0)",
     }
 
@@ -31,7 +40,7 @@ def is_valid_country_code(code):
 
 
 def build_pricing_adjustment(risk_score):
-    s=float(risk_score)
+    s=_to_float(risk_score)
     if s >= 75: return {"tier":"high","adjustmentPct": 8}
     if s >= 50: return {"tier":"medium","adjustmentPct": 3}
     return {"tier":"low","adjustmentPct": 0}
@@ -49,6 +58,26 @@ def build_pricing_decision(country_code, risk_score):
     adj = build_pricing_adjustment(risk_score)
     resp.update({"tier": adj["tier"], "adjustmentPct": adj["adjustmentPct"]})
     return resp
+
+
+def build_pricing_quote(country_code, risk_score, base_price, currency="USD"):
+    """Build a quote with final price using risk multiplier."""
+    decision = build_pricing_decision(country_code, risk_score)
+    base = _to_float(base_price)
+    multiplier = compute_pricing_multiplier(risk_score)
+    final_price = round(base * multiplier, 2)
+    return {
+        "countryCode": decision["countryCode"],
+        "riskScore": decision["riskScore"],
+        "tier": decision["tier"],
+        "adjustmentPct": decision["adjustmentPct"],
+        "multiplier": multiplier,
+        "basePrice": round(base, 2),
+        "finalPrice": final_price,
+        "currency": str(currency).upper(),
+        "sourceAttribution": decision["sourceAttribution"],
+        "issue": "ISSUE-003",
+    }
 
 
 def score_pricing_portfolio(entries):
@@ -93,10 +122,35 @@ def summarize_pricing_tiers_with_multiplier(entries):
     }
 
 
+def build_pricing_bands_response(entries, high_risk_threshold=75):
+    """Return portfolio-ready response for /v1/pricing/bands endpoint."""
+    normalized = []
+    for entry in entries or []:
+        normalized.append(
+            {
+                "countryCode": str(entry.get("countryCode", "")).upper(),
+                "riskScore": _to_float(entry.get("riskScore", 0)),
+            }
+        )
+
+    portfolio = score_pricing_portfolio(normalized)
+    bands = summarize_country_risk_bands(normalized)
+    high_risk = count_high_risk_countries(normalized, threshold=high_risk_threshold)
+    return {
+        "issue": "ISSUE-003",
+        "total": len(normalized),
+        "bands": bands,
+        "avgMultiplier": portfolio["avgMultiplier"],
+        "highRisk": high_risk,
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "sourceAttribution": "World Bank (CC BY 4.0)",
+    }
+
+
 def count_high_risk_countries(entries, threshold=75):
     """Count countries with risk score above high-risk threshold."""
     total = len(entries or [])
-    high = sum(1 for e in (entries or []) if float(e.get("riskScore", 0)) >= float(threshold))
+    high = sum(1 for e in (entries or []) if _to_float(e.get("riskScore", 0)) >= _to_float(threshold))
     return {"threshold": float(threshold), "total": total, "highRisk": high}
 
 
@@ -123,7 +177,7 @@ def aggregate_regional_risk(countries, region_mapping=None):
     """
     if not countries:
         return {"regions": {}, "stats": {"total_countries": 0, "regions_count": 0}}
-    
+
     default_regions = {
         "LATAM": ["BR", "MX", "AR", "CL", "CO"],
         "EMEA": ["DE", "FR", "GB", "IT", "ES", "ZA", "NG"],
@@ -131,19 +185,19 @@ def aggregate_regional_risk(countries, region_mapping=None):
         "NA": ["US", "CA"]
     }
     mapping = region_mapping or default_regions
-    
-    # Invert mapping for lookup
+
+    # Invert mapping for lookup (normalize country code)
     country_to_region = {}
     for region, codes in mapping.items():
         for code in codes:
-            country_to_region[code] = region
-    
+            country_to_region[str(code).upper()] = region
+
     region_data = {}
     for country in countries:
-        code = country.get("country_code", "")
-        risk = country.get("risk_score", 0)
+        code = str(country.get("country_code", "")).upper()
+        risk = _to_float(country.get("risk_score", 0) or 0)
         region = country_to_region.get(code, "OTHER")
-        
+
         if region not in region_data:
             region_data[region] = {"scores": [], "count": 0}
         region_data[region]["scores"].append(risk)
@@ -175,18 +229,21 @@ def calculate_portfolio_exposure(positions, risk_data):
     """
     if not positions or not risk_data:
         return {"exposure": 0.0, "risk_adjusted_value": 0.0, "positions_at_risk": 0}
-    
-    risk_lookup = {r.get("country_code"): r.get("risk_score", 0) for r in risk_data}
-    
+
+    risk_lookup = {
+        str(r.get("country_code", "")).upper(): _to_float(r.get("risk_score", 0) or 0)
+        for r in risk_data
+    }
+
     total_value = 0
     weighted_risk = 0
     positions_at_risk = 0
-    
+
     for pos in positions:
-        value = pos.get("value", 0)
-        country = pos.get("country_code", "")
+        value = _to_float(pos.get("value", 0) or 0)
+        country = str(pos.get("country_code", "")).upper()
         risk = risk_lookup.get(country, 0)
-        
+
         total_value += value
         weighted_risk += value * risk
         if risk > 0.5:

@@ -72,6 +72,71 @@ POST /v1/risk-score/batch
 }
 ```
 
+### Pricing Bands Summary (novo)
+
+```
+POST /v1/pricing/bands
+```
+
+#### Request Body
+
+```json
+{
+  "entries": [
+    {"countryCode": "BR", "riskScore": 80},
+    {"countryCode": "US", "riskScore": 40}
+  ]
+}
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "issue": "ISSUE-003",
+  "total": 2,
+  "bands": {"high": 1, "medium": 0, "low": 1},
+  "avgMultiplier": 1.04,
+  "highRisk": {"threshold": 75.0, "total": 2, "highRisk": 1},
+  "generatedAt": "2026-03-03T00:00:00Z",
+  "sourceAttribution": "World Bank (CC BY 4.0)"
+}
+```
+
+### Pricing Quote (novo)
+
+```
+POST /v1/pricing/quote
+```
+
+#### Request Body
+
+```json
+{
+  "countryCode": "BR",
+  "riskScore": 80,
+  "basePrice": 1000,
+  "currency": "BRL"
+}
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "countryCode": "BR",
+  "riskScore": 80.0,
+  "tier": "high",
+  "adjustmentPct": 8,
+  "multiplier": 1.08,
+  "basePrice": 1000.0,
+  "finalPrice": 1080.0,
+  "currency": "BRL",
+  "sourceAttribution": "World Bank (CC BY 4.0)",
+  "issue": "ISSUE-003"
+}
+```
+
 #### Success Response (200 OK)
 
 ```json
