@@ -50,6 +50,9 @@ def fetch_risk_indicator(country_code: str, year: int) -> float | None:
     except (TypeError, IndexError, KeyError) as json_err:
         print(f"Error parsing JSON response: {json_err} from {url}")
         print(f"Response content: {response.text}")
+    except Exception as unexpected_err:
+        # Keep fetch resilient against unexpected request library wrappers/mocks.
+        print(f"Unexpected error occurred: {unexpected_err} for {url}")
     
     return None
 
