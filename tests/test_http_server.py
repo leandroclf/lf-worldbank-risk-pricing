@@ -156,3 +156,58 @@ def test_batch_risk_score_route_rejects_invalid_json():
 
     assert status == 400
     assert result["error"] == "invalid_json"
+
+
+def test_batch_risk_score_route_rejects_non_object_json():
+    with run_server() as server:
+        status, result = request_json(
+            f"http://127.0.0.1:{server.server_port}/v1/risk-score/batch",
+            method="POST",
+            payload=[],
+        )
+
+    assert status == 400
+    assert result["error"] == "invalid_payload"
+
+
+def test_batch_risk_score_route_rejects_invalid_country_code_item():
+    with run_server() as server:
+        status, result = request_json(
+            f"http://127.0.0.1:{server.server_port}/v1/risk-score/batch",
+            method="POST",
+            payload={"country_codes": ["BR", 123]},
+        )
+
+    assert status == 400
+    assert result["error"] == "invalid_country_codes"
+
+
+def test_batch_risk_score_route_normalizes_country_codes():
+    payload = {
+        "results": [
+            {
+                "country_code": "BR",
+                "risk_score": 5.23,
+                "data_freshness": "2025",
+                "source_attribution": "World Bank (CC BY 4.0)",
+                "timestamp": "2026-03-22T00:00:00Z",
+            }
+        ],
+        "total": 1,
+        "successful": 1,
+        "failed": 0,
+        "timestamp": "2026-03-22T00:00:00Z",
+    }
+
+    with patch("backend.src.http_server.batch_get_risk_scores", return_value=payload) as mock_batch:
+        with run_server() as server:
+            status, result = request_json(
+                f"http://127.0.0.1:{server.server_port}/v1/risk-score/batch",
+                method="POST",
+                payload={"country_codes": ["br"]},
+            )
+
+    assert status == 200
+    assert result == payload
+    assert mock_batch.call_args.args[0] == ["BR"]
+    assert mock_batch.call_args.kwargs["record_metrics"] is False

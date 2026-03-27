@@ -72,6 +72,39 @@ POST /v1/risk-score/batch
 }
 ```
 
+#### Validation
+
+- The body must be a JSON object.
+- `country_codes` must be a list.
+- Each item must be a 2-letter ISO country code.
+- Lowercase codes are normalized to uppercase before lookup.
+
+#### Error Response - Invalid JSON (400 Bad Request)
+
+```json
+{
+  "error": "invalid_json"
+}
+```
+
+#### Error Response - Invalid Payload (400 Bad Request)
+
+```json
+{
+  "error": "invalid_payload",
+  "message": "JSON body must be an object"
+}
+```
+
+#### Error Response - Invalid Country Codes (400 Bad Request)
+
+```json
+{
+  "error": "invalid_country_codes",
+  "message": "country_codes must contain only 2-letter ISO codes"
+}
+```
+
 ### Pricing Bands Summary (novo)
 
 ```
@@ -179,7 +212,7 @@ POST /v1/pricing/quote
 | Field | Type | Description |
 |-------|------|-------------|
 | risk_score | number | Risk premium value (0-100 scale) |
-| data_freshness | string | Year of the data (e.g., "2023") |
+| data_freshness | string | Resolved year of the data (e.g., "2023") |
 
 ### Error Fields
 
@@ -203,7 +236,8 @@ POST /v1/pricing/quote
 - World Bank data is typically updated annually
 - The API attempts to fetch the most recent available data
 - Fallback mechanism tries current year, then previous years (up to 3 years back)
-- The `data_freshness` field indicates the year of the data
+- The `data_freshness` field reflects the resolved World Bank year when available
+- Telemetry records freshness age, fallback-year usage, and success rate per country/batch for baseline analysis
 
 ### Error Handling
 
@@ -211,6 +245,7 @@ POST /v1/pricing/quote
 2. **Data Not Available:** When World Bank has no data for the country/year
 3. **Network Errors:** Handled internally, returns "Data not available" error
 4. **Timeout Errors:** 10-second timeout, returns error if exceeded
+5. **Malformed Batch Payloads:** Non-object JSON, missing `country_codes`, or invalid country-code entries fail fast with 400 responses
 
 ### Performance Considerations
 
