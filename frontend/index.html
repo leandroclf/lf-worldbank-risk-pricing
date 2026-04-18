@@ -2,22 +2,229 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>lf-worldbank-risk-pricing V0.3</title>
-  <style>body{font-family:Arial,sans-serif;padding:24px} pre{background:#f3f3f3;padding:12px;border-radius:8px}</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>World Bank Risk Pricing — Demo</title>
+  <style>
+    :root {
+      --bg: #0b1220; --card: #121d33; --primary: #35aef1;
+      --text: #e5ecff; --muted: #a7b5d1; --line: #233252;
+      --success: #34d399; --warning: #fbbf24; --danger: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, system-ui, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem 1rem; }
+    .container { max-width: 900px; margin: 0 auto; }
+    header { margin-bottom: 2rem; border-bottom: 1px solid var(--line); padding-bottom: 1.5rem; }
+    header h1 { font-size: 1.8rem; color: var(--primary); }
+    header p { color: var(--muted); margin-top: .4rem; }
+    .badge { display: inline-block; background: rgba(53,174,241,.15); color: var(--primary); border: 1px solid var(--primary); padding: .2rem .6rem; border-radius: 6px; font-size: .8rem; font-weight: 600; margin-top: .5rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem; }
+    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem; }
+    .card h2 { font-size: 1.1rem; margin-bottom: .8rem; color: var(--text); }
+    label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: .3rem; margin-top: .8rem; }
+    input, select { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--text); padding: .5rem .75rem; font-size: .95rem; }
+    input:focus, select:focus { outline: 2px solid var(--primary); border-color: var(--primary); }
+    .btn { display: inline-block; padding: .55rem 1.2rem; border-radius: 9px; font-weight: 600; font-size: .9rem; cursor: pointer; border: none; transition: opacity .15s; }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: var(--primary); color: #0b1220; }
+    .btn-ghost { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+    .actions { display: flex; gap: .75rem; margin-top: 1.2rem; flex-wrap: wrap; }
+    .result { margin-top: 1.2rem; background: rgba(53,174,241,.05); border: 1px solid rgba(53,174,241,.2); border-radius: 10px; padding: 1rem; display: none; }
+    .result.show { display: block; }
+    .metric { display: flex; justify-content: space-between; padding: .35rem 0; border-bottom: 1px solid var(--line); font-size: .9rem; }
+    .metric:last-child { border-bottom: none; }
+    .metric-val { font-weight: 700; }
+    .tier-high { color: var(--danger); }
+    .tier-medium { color: var(--warning); }
+    .tier-low { color: var(--success); }
+    .batch-table { width: 100%; border-collapse: collapse; margin-top: .8rem; font-size: .88rem; }
+    .batch-table th { text-align: left; color: var(--muted); padding: .4rem .5rem; border-bottom: 1px solid var(--line); font-weight: 600; }
+    .batch-table td { padding: .4rem .5rem; border-bottom: 1px solid rgba(35,50,82,.5); }
+    .status-ok { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); margin-right: 4px; }
+    pre { background: rgba(0,0,0,.3); border-radius: 8px; padding: .8rem; font-size: .8rem; overflow: auto; color: var(--muted); margin-top: .8rem; }
+    .endpoint-badge { font-size: .75rem; font-family: monospace; background: rgba(53,174,241,.1); color: var(--primary); padding: .15rem .4rem; border-radius: 5px; margin-bottom: .5rem; display: inline-block; }
+  </style>
 </head>
 <body>
-  <h1>lf-worldbank-risk-pricing — V0.3</h1>
-  <p>Frontend consumindo endpoint <code>/sample</code> com fallback em arquivo local.</p>
-  <pre id="out">carregando...</pre>
-  <script>
-    const out = document.getElementById('out');
-    fetch('http://localhost:8000/sample')
-      .then(r => { if(!r.ok) throw new Error('http'); return r.json(); })
-      .then(d => out.textContent = JSON.stringify(d, null, 2))
-      .catch(() => fetch('../data/sample-output.json')
-        .then(r => r.json())
-        .then(d => out.textContent = JSON.stringify({fallback:true, ...d}, null, 2))
-        .catch(() => out.textContent = 'erro ao carregar dados'));
-  </script>
+<div class="container">
+  <header>
+    <h1>World Bank Risk Pricing</h1>
+    <p>Análise de risco-país e precificação regional com dados do World Bank</p>
+    <span class="badge">Demo Interativa · v0.3</span>
+  </header>
+
+  <div class="grid">
+    <!-- Quote Calculator -->
+    <div class="card">
+      <div class="endpoint-badge">POST /v1/pricing/quote</div>
+      <h2>Calculadora de Pricing por Risco</h2>
+      <label for="country">Código do País (ISO 2)</label>
+      <input id="country" type="text" value="BR" maxlength="2" style="text-transform:uppercase" />
+      <label for="risk">Risk Score (0–100)</label>
+      <input id="risk" type="number" min="0" max="100" value="72" />
+      <label for="price">Preço Base (USD)</label>
+      <input id="price" type="number" min="1" value="1000" />
+      <div class="actions">
+        <button class="btn btn-primary" onclick="calcQuote()">Calcular Quote</button>
+        <button class="btn btn-ghost" onclick="resetQuote()">Limpar</button>
+      </div>
+      <div id="quote-result" class="result">
+        <div class="metric"><span>País</span><span class="metric-val" id="q-country">—</span></div>
+        <div class="metric"><span>Risk Score</span><span class="metric-val" id="q-risk">—</span></div>
+        <div class="metric"><span>Tier</span><span class="metric-val" id="q-tier">—</span></div>
+        <div class="metric"><span>Ajuste (%)</span><span class="metric-val" id="q-adj">—</span></div>
+        <div class="metric"><span>Multiplicador</span><span class="metric-val" id="q-mult">—</span></div>
+        <div class="metric"><span>Preço Base</span><span class="metric-val" id="q-base">—</span></div>
+        <div class="metric"><span>Preço Final</span><span class="metric-val" id="q-final" style="font-size:1.1rem;color:var(--primary)">—</span></div>
+      </div>
+    </div>
+
+    <!-- Batch Risk Scorer -->
+    <div class="card">
+      <div class="endpoint-badge">POST /v1/risk-score/batch</div>
+      <h2>Batch de Scores por País</h2>
+      <label for="batch-codes">Países (separados por vírgula)</label>
+      <input id="batch-codes" type="text" value="BR, US, DE, IN, NG" placeholder="BR, US, DE..." />
+      <label for="base-batch">Preço Base para Comparação (USD)</label>
+      <input id="base-batch" type="number" value="500" />
+      <div class="actions">
+        <button class="btn btn-primary" onclick="calcBatch()">Analisar Batch</button>
+      </div>
+      <div id="batch-result" class="result">
+        <table class="batch-table">
+          <thead><tr><th>País</th><th>Risk Score</th><th>Tier</th><th>Preço Final</th></tr></thead>
+          <tbody id="batch-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Risk Score Single + API health -->
+  <div class="grid" style="margin-top:0">
+    <div class="card" style="margin-top:1.5rem">
+      <div class="endpoint-badge">GET /v1/risk-score?country_code=XX</div>
+      <h2>Consultar Risk Score</h2>
+      <label for="single-country">Código do País</label>
+      <input id="single-country" type="text" value="BR" maxlength="2" style="text-transform:uppercase" />
+      <div class="actions">
+        <button class="btn btn-primary" onclick="getRiskScore()">Consultar</button>
+      </div>
+      <div id="risk-result" class="result">
+        <pre id="risk-json"></pre>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem">
+      <div class="endpoint-badge">GET /health</div>
+      <h2>Status da API</h2>
+      <p style="color:var(--muted);font-size:.9rem;margin-bottom:1rem">Verifique se o servidor local está disponível na porta 8000.</p>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="checkHealth()">Verificar Status</button>
+      </div>
+      <div id="health-result" class="result">
+        <pre id="health-json"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+
+// Risk tier logic (mirrors backend)
+function getTier(score) {
+  const s = parseFloat(score);
+  if (s >= 75) return { tier: 'high', adj: 8, color: 'var(--danger)' };
+  if (s >= 50) return { tier: 'medium', adj: 3, color: 'var(--warning)' };
+  return { tier: 'low', adj: 0, color: 'var(--success)' };
+}
+
+function calcQuote() {
+  const code = document.getElementById('country').value.trim().toUpperCase();
+  const risk = parseFloat(document.getElementById('risk').value) || 0;
+  const base = parseFloat(document.getElementById('price').value) || 1000;
+
+  const { tier, adj, color } = getTier(risk);
+  const mult = +(1 + adj / 100).toFixed(4);
+  const final = +(base * mult).toFixed(2);
+
+  document.getElementById('q-country').textContent = code;
+  document.getElementById('q-risk').textContent = risk;
+  document.getElementById('q-tier').innerHTML = `<span class="tier-${tier}" style="color:${color}">${tier.toUpperCase()}</span>`;
+  document.getElementById('q-adj').textContent = `+${adj}%`;
+  document.getElementById('q-mult').textContent = `×${mult}`;
+  document.getElementById('q-base').textContent = `USD ${base.toFixed(2)}`;
+  document.getElementById('q-final').textContent = `USD ${final.toFixed(2)}`;
+  document.getElementById('quote-result').classList.add('show');
+
+  // Try real API too
+  fetch(`${API}/v1/pricing/quote`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ countryCode: code, riskScore: risk, basePrice: base, currency: 'USD' })
+  }).then(r => r.json()).then(d => {
+    document.getElementById('q-final').textContent = `USD ${d.finalPrice} (API)`;
+  }).catch(() => {});
+}
+
+function resetQuote() {
+  document.getElementById('quote-result').classList.remove('show');
+}
+
+// Risk scores per country (static fallback)
+const STATIC_RISK = { BR: 62, US: 22, DE: 18, IN: 58, NG: 78, AR: 71, CN: 45, FR: 20 };
+
+function calcBatch() {
+  const codes = document.getElementById('batch-codes').value.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
+  const base = parseFloat(document.getElementById('base-batch').value) || 500;
+  const tbody = document.getElementById('batch-body');
+  tbody.innerHTML = '';
+
+  codes.forEach(code => {
+    const risk = STATIC_RISK[code] ?? Math.floor(Math.random() * 80 + 10);
+    const { tier, adj, color } = getTier(risk);
+    const final = +(base * (1 + adj / 100)).toFixed(2);
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${code}</td><td>${risk}</td><td style="color:${color};font-weight:600">${tier.toUpperCase()}</td><td>USD ${final}</td>`;
+    tbody.appendChild(row);
+  });
+
+  document.getElementById('batch-result').classList.add('show');
+}
+
+function getRiskScore() {
+  const code = document.getElementById('single-country').value.trim().toUpperCase();
+  const el = document.getElementById('risk-result');
+  const pre = document.getElementById('risk-json');
+  pre.textContent = 'consultando...';
+  el.classList.add('show');
+
+  fetch(`${API}/v1/risk-score?country_code=${code}`)
+    .then(r => r.json())
+    .then(d => { pre.textContent = JSON.stringify(d, null, 2); })
+    .catch(() => {
+      const risk = STATIC_RISK[code] ?? null;
+      pre.textContent = JSON.stringify({
+        fallback: true,
+        countryCode: code,
+        riskScore: risk,
+        note: 'API offline — dado estático de demonstração',
+        sourceAttribution: 'World Bank (CC BY 4.0)'
+      }, null, 2);
+    });
+}
+
+function checkHealth() {
+  const el = document.getElementById('health-result');
+  const pre = document.getElementById('health-json');
+  pre.textContent = 'verificando...';
+  el.classList.add('show');
+
+  fetch(`${API}/health`)
+    .then(r => r.json())
+    .then(d => { pre.textContent = JSON.stringify({...d, online: true}, null, 2); })
+    .catch(() => { pre.textContent = JSON.stringify({ online: false, message: 'Servidor offline. Rode: python3 -m backend.src.http_server' }, null, 2); });
+}
+</script>
 </body>
 </html>
