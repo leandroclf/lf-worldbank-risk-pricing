@@ -87,7 +87,7 @@ paths:
         - name: country_code
           in: query
           required: true
-          description: Código ISO 3166-1 alpha-2 do país (ex.: BR, US, DE)
+          description: "Código ISO 3166-1 alpha-2 do país (ex.: BR, US, DE)"
           schema:
             type: string
             pattern: "^[A-Z]{2}$"
@@ -427,11 +427,11 @@ components:
           example: medium
         adjustment:
           type: number
-          description: Percentual de ajuste aplicado (ex.: 3 representa +3%)
+          description: "Percentual de ajuste aplicado (ex.: 3 representa +3%)"
           example: 3
         multiplier:
           type: number
-          description: Multiplicador de preço (ex.: 1.03 para +3%)
+          description: "Multiplicador de preço (ex.: 1.03 para +3%)"
           example: 1.03
         basePrice:
           type: number
