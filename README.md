@@ -3,6 +3,7 @@
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python)
 ![License](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey)
 ![Status](https://img.shields.io/badge/Status-Production-brightgreen)
+[![Run in Postman](https://run.pstmn.io/button.svg)](https://www.postman.com/lfsolucoes)
 
 API de scoring de risco-país e pricing dinâmico regional, construída sobre dados públicos do **World Bank**. Permite calcular o risco de um país, processar portfólios em lote e gerar cotações de preço ajustadas ao risco em tempo real.
 
