@@ -1,0 +1,289 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "lf-worldbank-risk-pricing",
+    "description": "Coleção completa de requests para a API de scoring de risco-país e pricing dinâmico regional.\n\nUtiliza dados do World Bank (CC BY 4.0) para calcular scores de risco e gerar cotações de preço ajustadas ao risco.\n\n**Regras de tier:**\n- riskScore >= 75 → high (+8%)\n- riskScore >= 50 → medium (+3%)\n- riskScore < 50  → low (+0%)\n\n**Produção:** https://lf-worldbank-risk-pricing.onrender.com",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://lf-worldbank-risk-pricing.onrender.com",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "description": "Endpoints de verificação de saúde e disponibilidade do serviço.",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Verifica se o serviço está operacional. Retorna `{\"status\":\"ok\",\"service\":\"lf-worldbank-risk-pricing\"}` quando saudável."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/health",
+                  "host": ["{{base_url}}"],
+                  "path": ["health"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"status\": \"ok\",\n  \"service\": \"lf-worldbank-risk-pricing\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Sample Payload",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sample",
+              "host": ["{{base_url}}"],
+              "path": ["sample"]
+            },
+            "description": "Retorna um payload de exemplo com a estrutura de resposta dos endpoints principais. Útil para entender o contrato da API antes de integrar."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Risk Score",
+      "description": "Endpoints de consulta e cálculo de scores de risco-país com base em indicadores do World Bank.",
+      "item": [
+        {
+          "name": "Get Risk Score (BR)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/risk-score?country_code=BR",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "risk-score"],
+              "query": [
+                {
+                  "key": "country_code",
+                  "value": "BR",
+                  "description": "Código ISO 3166-1 alpha-2 do país"
+                }
+              ]
+            },
+            "description": "Retorna o score de risco para o Brasil (BR). Troque o valor de `country_code` para consultar outros países (ex.: US, DE, AR, MX).\n\n**Tiers:**\n- low: score < 50, sem ajuste\n- medium: score 50–74, +3%\n- high: score >= 75, +8%"
+          },
+          "response": [
+            {
+              "name": "200 OK - Brasil",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/risk-score?country_code=BR",
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "risk-score"],
+                  "query": [
+                    { "key": "country_code", "value": "BR" }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"countryCode\": \"BR\",\n  \"riskScore\": 62,\n  \"tier\": \"medium\",\n  \"sourceAttribution\": \"World Bank (CC BY 4.0)\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Batch Risk Score",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country_codes\": [\"BR\", \"US\", \"DE\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/risk-score/batch",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "risk-score", "batch"]
+            },
+            "description": "Processa uma lista de países em lote e retorna o score de risco para cada um. Ideal para avaliar múltiplos mercados de uma vez.\n\nAdicione ou remova códigos de país no array `country_codes` conforme necessário."
+          },
+          "response": [
+            {
+              "name": "200 OK - Lote BR, US, DE",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"country_codes\": [\"BR\", \"US\", \"DE\"]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/v1/risk-score/batch",
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "risk-score", "batch"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "[\n  {\n    \"countryCode\": \"BR\",\n    \"riskScore\": 62,\n    \"tier\": \"medium\",\n    \"sourceAttribution\": \"World Bank (CC BY 4.0)\"\n  },\n  {\n    \"countryCode\": \"US\",\n    \"riskScore\": 22,\n    \"tier\": \"low\",\n    \"sourceAttribution\": \"World Bank (CC BY 4.0)\"\n  },\n  {\n    \"countryCode\": \"DE\",\n    \"riskScore\": 18,\n    \"tier\": \"low\",\n    \"sourceAttribution\": \"World Bank (CC BY 4.0)\"\n  }\n]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pricing",
+      "description": "Endpoints para geração de cotações e bandas de preço ajustadas ao risco-país.",
+      "item": [
+        {
+          "name": "Pricing Bands",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entries\": [\n    {\n      \"countryCode\": \"BR\",\n      \"riskScore\": 62,\n      \"basePrice\": 1000\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/pricing/bands",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "pricing", "bands"]
+            },
+            "description": "Calcula as bandas de pricing para uma lista de entradas. Cada entrada deve conter `countryCode`, `riskScore` e `basePrice`.\n\nO endpoint retorna o tier, multiplicador e preço final calculado para cada entrada, permitindo comparar múltiplos países/cenários de preço."
+          },
+          "response": [
+            {
+              "name": "200 OK - Bands para BR",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"entries\": [\n    {\n      \"countryCode\": \"BR\",\n      \"riskScore\": 62,\n      \"basePrice\": 1000\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/v1/pricing/bands",
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "pricing", "bands"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "[\n  {\n    \"countryCode\": \"BR\",\n    \"riskScore\": 62,\n    \"tier\": \"medium\",\n    \"basePrice\": 1000,\n    \"finalPrice\": 1030.0,\n    \"multiplier\": 1.03\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Pricing Quote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"countryCode\": \"BR\",\n  \"riskScore\": 62,\n  \"basePrice\": 1000,\n  \"currency\": \"USD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/pricing/quote",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "pricing", "quote"]
+            },
+            "description": "Gera uma cotação de preço completa para um país específico, aplicando o multiplicador de risco.\n\nRetorna todos os detalhes do cálculo para rastreabilidade: tier, ajuste percentual, multiplicador, preço base, preço final, moeda e timestamp.\n\n**Exemplos de cenários:**\n- BR (riskScore 62, medium): basePrice 1000 → finalPrice 1030\n- País high risk (riskScore 80): basePrice 1000 → finalPrice 1080\n- País low risk (riskScore 30): basePrice 1000 → finalPrice 1000"
+          },
+          "response": [
+            {
+              "name": "200 OK - Quote BR",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"countryCode\": \"BR\",\n  \"riskScore\": 62,\n  \"basePrice\": 1000,\n  \"currency\": \"USD\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/v1/pricing/quote",
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "pricing", "quote"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"countryCode\": \"BR\",\n  \"riskScore\": 62,\n  \"tier\": \"medium\",\n  \"adjustment\": 3,\n  \"multiplier\": 1.03,\n  \"basePrice\": 1000,\n  \"finalPrice\": 1030.0,\n  \"currency\": \"USD\",\n  \"generatedAtHttp\": \"Fri, 18 Apr 2026 00:00:00 GMT\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

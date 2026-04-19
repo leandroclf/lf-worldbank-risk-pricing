@@ -1,0 +1,462 @@
+openapi: 3.0.3
+info:
+  title: lf-worldbank-risk-pricing API
+  version: "1.0.0"
+  description: |
+    API de scoring de risco-país e pricing dinâmico regional, construída sobre dados do
+    World Bank. Permite calcular scores de risco por país, processar lotes de países e
+    gerar cotações de preço ajustadas ao risco.
+
+    **Regras de tier:**
+    | Tier   | Condição            | Ajuste |
+    |--------|---------------------|--------|
+    | high   | riskScore >= 75     | +8%    |
+    | medium | 50 <= riskScore < 75| +3%    |
+    | low    | riskScore < 50      | +0%    |
+
+    **Atribuição de dados:** World Bank (CC BY 4.0)
+  contact:
+    name: Leandro Freire
+    email: leandro.freire@hiveplace.com.br
+  license:
+    name: CC BY 4.0
+    url: https://creativecommons.org/licenses/by/4.0/
+
+servers:
+  - url: https://lf-worldbank-risk-pricing.onrender.com
+    description: Ambiente de Produção (Render)
+  - url: http://localhost:8000
+    description: Ambiente local de desenvolvimento
+
+tags:
+  - name: Health
+    description: Verificação de saúde e disponibilidade do serviço
+  - name: Risk Score
+    description: Consulta e cálculo de scores de risco-país com base no World Bank
+  - name: Pricing
+    description: Geração de cotações e bandas de preço ajustadas ao risco-país
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Retorna o status de saúde do serviço. Utilizado por monitoramento e load balancers.
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Serviço operacional
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+                service: lf-worldbank-risk-pricing
+
+  /sample:
+    get:
+      tags:
+        - Health
+      summary: Payload de exemplo
+      description: |
+        Retorna um payload de exemplo que demonstra a estrutura de resposta dos endpoints
+        principais. Útil para integração e testes iniciais.
+      operationId: getSample
+      responses:
+        "200":
+          description: Exemplo de payload retornado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Payload de demonstração com estrutura de exemplo
+
+  /v1/risk-score:
+    get:
+      tags:
+        - Risk Score
+      summary: Consultar score de risco de um país
+      description: |
+        Retorna o score de risco calculado para um país específico, identificado pelo
+        código ISO 3166-1 alpha-2. O score é derivado de indicadores macroeconômicos
+        do World Bank e classificado em tiers (low, medium, high).
+      operationId: getRiskScore
+      parameters:
+        - name: country_code
+          in: query
+          required: true
+          description: Código ISO 3166-1 alpha-2 do país (ex.: BR, US, DE)
+          schema:
+            type: string
+            pattern: "^[A-Z]{2}$"
+            example: BR
+      responses:
+        "200":
+          description: Score de risco calculado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskScoreResponse"
+              example:
+                countryCode: BR
+                riskScore: 62
+                tier: medium
+                sourceAttribution: "World Bank (CC BY 4.0)"
+        "400":
+          description: Parâmetro `country_code` ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: País não encontrado na base de dados
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/risk-score/batch:
+    post:
+      tags:
+        - Risk Score
+      summary: Consultar scores de risco em lote
+      description: |
+        Processa uma lista de códigos de países e retorna o score de risco para cada um.
+        Ideal para integração sistêmica que precisa avaliar múltiplos mercados de uma só vez.
+      operationId: getRiskScoreBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchRiskScoreRequest"
+            example:
+              country_codes:
+                - BR
+                - US
+                - DE
+      responses:
+        "200":
+          description: Array de scores de risco processados com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RiskScoreResponse"
+              example:
+                - countryCode: BR
+                  riskScore: 62
+                  tier: medium
+                  sourceAttribution: "World Bank (CC BY 4.0)"
+                - countryCode: US
+                  riskScore: 22
+                  tier: low
+                  sourceAttribution: "World Bank (CC BY 4.0)"
+                - countryCode: DE
+                  riskScore: 18
+                  tier: low
+                  sourceAttribution: "World Bank (CC BY 4.0)"
+        "400":
+          description: Body inválido ou lista de países vazia
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/pricing/bands:
+    post:
+      tags:
+        - Pricing
+      summary: Calcular bandas de pricing para múltiplos países
+      description: |
+        Recebe uma lista de entradas com `countryCode`, `riskScore` e `basePrice`,
+        e retorna as bandas de preço com tier e multiplicador aplicado para cada entrada.
+      operationId: getPricingBands
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PricingBandsRequest"
+            example:
+              entries:
+                - countryCode: BR
+                  riskScore: 62
+                  basePrice: 1000
+      responses:
+        "200":
+          description: Bandas de pricing calculadas com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PricingBandResponse"
+        "400":
+          description: Body inválido ou entries vazio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/pricing/quote:
+    post:
+      tags:
+        - Pricing
+      summary: Gerar cotação de preço ajustada ao risco
+      description: |
+        Gera uma cotação de preço completa para um país, aplicando o multiplicador de
+        risco correspondente ao tier. Retorna o preço final com todos os detalhes do
+        cálculo para rastreabilidade.
+      operationId: getPricingQuote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PricingQuoteRequest"
+            example:
+              countryCode: BR
+              riskScore: 62
+              basePrice: 1000
+              currency: USD
+      responses:
+        "200":
+          description: Cotação gerada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PricingQuoteResponse"
+              example:
+                countryCode: BR
+                riskScore: 62
+                tier: medium
+                adjustment: 3
+                multiplier: 1.03
+                basePrice: 1000
+                finalPrice: 1030.0
+                currency: USD
+                generatedAtHttp: "Fri, 18 Apr 2026 00:00:00 GMT"
+        "400":
+          description: Body inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - service
+      properties:
+        status:
+          type: string
+          description: Estado do serviço
+          example: ok
+        service:
+          type: string
+          description: Nome do serviço
+          example: lf-worldbank-risk-pricing
+
+    RiskScoreResponse:
+      type: object
+      required:
+        - countryCode
+        - riskScore
+        - tier
+        - sourceAttribution
+      properties:
+        countryCode:
+          type: string
+          description: Código ISO 3166-1 alpha-2 do país
+          example: BR
+        riskScore:
+          type: integer
+          description: Score de risco de 0 a 100 (quanto maior, maior o risco)
+          minimum: 0
+          maximum: 100
+          example: 62
+        tier:
+          type: string
+          description: Classificação de risco baseada no score
+          enum:
+            - low
+            - medium
+            - high
+          example: medium
+        sourceAttribution:
+          type: string
+          description: Atribuição da fonte de dados
+          example: "World Bank (CC BY 4.0)"
+
+    BatchRiskScoreRequest:
+      type: object
+      required:
+        - country_codes
+      properties:
+        country_codes:
+          type: array
+          description: Lista de códigos ISO 3166-1 alpha-2
+          items:
+            type: string
+            pattern: "^[A-Z]{2}$"
+          minItems: 1
+          example:
+            - BR
+            - US
+            - DE
+
+    PricingEntry:
+      type: object
+      required:
+        - countryCode
+        - riskScore
+        - basePrice
+      properties:
+        countryCode:
+          type: string
+          description: Código ISO 3166-1 alpha-2 do país
+          example: BR
+        riskScore:
+          type: integer
+          description: Score de risco de 0 a 100
+          minimum: 0
+          maximum: 100
+          example: 62
+        basePrice:
+          type: number
+          description: Preço base antes da aplicação do ajuste de risco
+          example: 1000
+
+    PricingBandsRequest:
+      type: object
+      required:
+        - entries
+      properties:
+        entries:
+          type: array
+          description: Lista de entradas para cálculo de bandas
+          items:
+            $ref: "#/components/schemas/PricingEntry"
+          minItems: 1
+
+    PricingBandResponse:
+      type: object
+      properties:
+        countryCode:
+          type: string
+          example: BR
+        riskScore:
+          type: integer
+          example: 62
+        tier:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+          example: medium
+        basePrice:
+          type: number
+          example: 1000
+        finalPrice:
+          type: number
+          example: 1030.0
+        multiplier:
+          type: number
+          example: 1.03
+
+    PricingQuoteRequest:
+      type: object
+      required:
+        - countryCode
+        - riskScore
+        - basePrice
+      properties:
+        countryCode:
+          type: string
+          description: Código ISO 3166-1 alpha-2 do país
+          example: BR
+        riskScore:
+          type: integer
+          description: Score de risco de 0 a 100
+          minimum: 0
+          maximum: 100
+          example: 62
+        basePrice:
+          type: number
+          description: Preço base antes do ajuste
+          example: 1000
+        currency:
+          type: string
+          description: Código ISO 4217 da moeda (opcional, padrão USD)
+          example: USD
+          default: USD
+
+    PricingQuoteResponse:
+      type: object
+      required:
+        - countryCode
+        - riskScore
+        - tier
+        - adjustment
+        - multiplier
+        - basePrice
+        - finalPrice
+        - currency
+        - generatedAtHttp
+      properties:
+        countryCode:
+          type: string
+          example: BR
+        riskScore:
+          type: integer
+          example: 62
+        tier:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+          example: medium
+        adjustment:
+          type: number
+          description: Percentual de ajuste aplicado (ex.: 3 representa +3%)
+          example: 3
+        multiplier:
+          type: number
+          description: Multiplicador de preço (ex.: 1.03 para +3%)
+          example: 1.03
+        basePrice:
+          type: number
+          description: Preço base informado
+          example: 1000
+        finalPrice:
+          type: number
+          description: Preço final após aplicação do multiplicador
+          example: 1030.0
+        currency:
+          type: string
+          description: Moeda da cotação
+          example: USD
+        generatedAtHttp:
+          type: string
+          description: Data e hora de geração da cotação (formato HTTP date)
+          example: "Fri, 18 Apr 2026 00:00:00 GMT"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Mensagem de erro descritiva
+          example: "country_code is required"
+        detail:
+          type: string
+          description: Detalhes adicionais sobre o erro (opcional)

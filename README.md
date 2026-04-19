@@ -1,78 +1,301 @@
-# lf-worldbank-risk-pricing: Módulo de Risco-País e Pricing (ISSUE-003)
+# lf-worldbank-risk-pricing
 
-## Visão Geral
+![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python)
+![License](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey)
+![Status](https://img.shields.io/badge/Status-Production-brightgreen)
 
-Este repositório contém o Mínimo Produto Viável (MVP) do componente de Risco-País e Pricing, utilizando dados do World Bank para analisar e aplicar fatores de risco em estratégias de precificação. O objetivo é permitir uma precificação regionalizada e dinâmica, ajustada aos riscos e oportunidades de cada mercado.
+API de scoring de risco-país e pricing dinâmico regional, construída sobre dados públicos do **World Bank**. Permite calcular o risco de um país, processar portfólios em lote e gerar cotações de preço ajustadas ao risco em tempo real.
 
-## Contexto e Issue
-
-Desenvolvido sob a **ISSUE-003: Módulo de risco-país e pricing regional com World Bank**, este componente é fundamental para a otimização de receita e a mitigação de riscos em operações globais, garantindo que os preços reflitam as realidades econômicas locais.
-
-## Problema Resolvido
-
-A precificação uniforme em diferentes mercados pode levar à perda de oportunidades (em mercados estáveis) ou a prejuízos (em mercados voláteis). Este componente resolve esse problema, fornecendo uma estrutura baseada em dados para calcular e aplicar multiplicadores de preço e ajustes de risco por país e região.
-
-## Objetivo do MVP
-
-O MVP visa criar uma base para a análise de risco e pricing regional, com as seguintes capacidades:
-
-*   **Scoring de Risco:** Validar e utilizar scores de risco por país.
-*   **Agregação de Portfólio:** Calcular o risco agregado de um portfólio de ativos distribuídos em diferentes países.
-*   **Cálculo de Multiplicador:** Definir e calcular multiplicadores de preço com base no risco-país.
-*   **Análise de Risco Regional:** Agregar dados de risco por região (LATAM, EMEA, APAC, NA) para análise macro.
-*   **Estimativa de Ajuste:** Estimar o percentual de ajuste necessário para um portfólio com base no risco.
-
-## Objetivo Final em Produção (Visão Estratégica)
-
-Quando em produção, o `lf-worldbank-risk-pricing` será um motor de pricing dinâmico e inteligente, capaz de:
-
-*   **Pricing Automatizado e Dinâmico:** Ajustar preços de produtos e serviços em tempo real, com base em flutuações de risco e indicadores macroeconômicos.
-*   **Simulação de Cenários:** Permitir a simulação de diferentes cenários de risco e seu impacto na receita e margens.
-*   **Otimização de Margem:** Maximizar a margem de lucro por região, equilibrando competitividade e exposição ao risco.
-*   **Forecasting de Risco:** Utilizar modelos preditivos para antecipar mudanças no risco-país e ajustar a estratégia de pricing proativamente.
-
-## Funcionalidades Chave Implementadas (MVP)
-
-*   `score_pricing_portfolio()`: Agrega o risco e o multiplicador médio para um portfólio.
-*   `summarize_country_risk_bands()`: Sumariza países por banda de risco.
-*   `estimate_portfolio_adjustment_pct()`: Estima o ajuste percentual do portfólio.
-*   `summarize_pricing_tiers_with_multiplier()`: Sumariza tiers de preço com multiplicadores.
-*   `aggregate_regional_risk()`: Agrega scores de risco por região.
-*   `calculate_portfolio_exposure()`: Calcula a exposição ponderada do portfólio ao risco.
-
-## Estratégia e Abordagem
-
-O desenvolvimento segue uma abordagem modular, onde novos fatores de risco e modelos de pricing podem ser adicionados incrementalmente. A validação contínua dos dados do World Bank e a testabilidade das funções de cálculo são cruciais para a confiabilidade do sistema.
-
-## Stack Técnica
-
-*   **Linguagem:** Python
-*   **Ferramentas:** Git, GitHub Actions (CI/CD)
-*   **Dados:** World Bank (fonte primária).
-
-## Como Começar
-
-Para configurar e executar o projeto localmente:
-
-1.  **Clone o repositório:**
-    `git clone https://github.com/leandroclf/lf-worldbank-risk-pricing.git`
-    `cd lf-worldbank-risk-pricing`
-2.  **Instale as dependências:**
-    `pip install -r requirements.txt` (se houver, ou adicione conforme necessário)
-3.  **Execute testes:**
-    `PYTHONPATH=. python3 -c "from backend.src.api import aggregate_regional_risk; ..."` (Exemplo de execução de função)
-    `# Ou se pytest estiver configurado: pytest`
-    `PYTHONPATH=. python3 tools/smoke_check.py` (para smoke tests)
-
-## Diretrizes de Contribuição
-
-Este projeto adota um fluxo de trabalho de desenvolvimento que permite **commit direto na branch `main`**. Pull Requests são opcionais e encorajados para revisão colaborativa, mas não são obrigatórios para a integração de código.
-
-## Governança
-
-*   **Proprietário Primário (`ownerPrimary`):** Builder-repo
-*   **Categoria Primária (`categoryPrimary`):** Engenharia-Arquitetura
-*   **KPI de Valor (`valueKpi`):** % de otimização de margem por região; redução de perdas em mercados voláteis.
+**URL de Produção:** [`https://lf-worldbank-risk-pricing.onrender.com`](https://lf-worldbank-risk-pricing.onrender.com)
 
 ---
-_Gerado por Stephen (agente) em 2026-02-27. Ref.: ISSUE-003._
+
+## Sumário
+
+- [Descrição](#descrição)
+- [Endpoints](#endpoints)
+- [Regras de Tier](#regras-de-tier)
+- [Quick Start](#quick-start)
+- [Exemplos curl](#exemplos-curl)
+- [Integração Sistêmica](#integração-sistêmica)
+- [Documentação e Postman](#documentação-e-postman)
+- [Como importar no Postman](#como-importar-no-postman)
+- [Attribution](#attribution)
+
+---
+
+## Descrição
+
+O `lf-worldbank-risk-pricing` é um motor de pricing dinâmico que:
+
+- Calcula o **score de risco** de países usando indicadores macroeconômicos do World Bank
+- Classifica países em **tiers de risco** (low, medium, high)
+- Aplica **multiplicadores de preço** com base no tier
+- Processa **lotes de países** para análise de portfólios
+- Gera **cotações detalhadas** com rastreabilidade completa do cálculo
+
+---
+
+## Endpoints
+
+| Método | Path | Descrição |
+|--------|------|-----------|
+| `GET` | `/health` | Verificação de saúde do serviço |
+| `GET` | `/sample` | Payload de exemplo da API |
+| `GET` | `/v1/risk-score` | Score de risco de um país (`?country_code=BR`) |
+| `POST` | `/v1/risk-score/batch` | Scores de risco em lote para múltiplos países |
+| `POST` | `/v1/pricing/bands` | Bandas de pricing com tier e multiplicador |
+| `POST` | `/v1/pricing/quote` | Cotação de preço ajustada ao risco |
+
+---
+
+## Regras de Tier
+
+| Tier | Condição | Ajuste aplicado |
+|------|----------|-----------------|
+| `high` | riskScore >= 75 | +8% |
+| `medium` | 50 <= riskScore < 75 | +3% |
+| `low` | riskScore < 50 | +0% |
+
+---
+
+## Quick Start
+
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/leandroclf/lf-worldbank-risk-pricing.git
+cd lf-worldbank-risk-pricing
+```
+
+### 2. Crie e ative o ambiente virtual
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Instale as dependências
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Rode o servidor localmente
+
+```bash
+uvicorn src.main:app --reload --port 8000
+# ou
+python -m src.main
+```
+
+A API estará disponível em `http://localhost:8000`.
+
+### 5. Execute os testes
+
+```bash
+PYTHONPATH=. pytest
+# ou
+PYTHONPATH=. python3 tools/smoke_check.py
+```
+
+---
+
+## Exemplos curl
+
+### Health check
+
+```bash
+curl https://lf-worldbank-risk-pricing.onrender.com/health
+```
+
+```json
+{"status":"ok","service":"lf-worldbank-risk-pricing"}
+```
+
+### Payload de exemplo
+
+```bash
+curl https://lf-worldbank-risk-pricing.onrender.com/sample
+```
+
+### Score de risco — país único
+
+```bash
+curl "https://lf-worldbank-risk-pricing.onrender.com/v1/risk-score?country_code=BR"
+```
+
+```json
+{
+  "countryCode": "BR",
+  "riskScore": 62,
+  "tier": "medium",
+  "sourceAttribution": "World Bank (CC BY 4.0)"
+}
+```
+
+### Score de risco — lote
+
+```bash
+curl -X POST https://lf-worldbank-risk-pricing.onrender.com/v1/risk-score/batch \
+  -H "Content-Type: application/json" \
+  -d '{"country_codes": ["BR", "US", "DE"]}'
+```
+
+```json
+[
+  {"countryCode": "BR", "riskScore": 62, "tier": "medium", "sourceAttribution": "World Bank (CC BY 4.0)"},
+  {"countryCode": "US", "riskScore": 22, "tier": "low",    "sourceAttribution": "World Bank (CC BY 4.0)"},
+  {"countryCode": "DE", "riskScore": 18, "tier": "low",    "sourceAttribution": "World Bank (CC BY 4.0)"}
+]
+```
+
+### Bandas de pricing
+
+```bash
+curl -X POST https://lf-worldbank-risk-pricing.onrender.com/v1/pricing/bands \
+  -H "Content-Type: application/json" \
+  -d '{"entries": [{"countryCode": "BR", "riskScore": 62, "basePrice": 1000}]}'
+```
+
+### Cotação de preço
+
+```bash
+curl -X POST https://lf-worldbank-risk-pricing.onrender.com/v1/pricing/quote \
+  -H "Content-Type: application/json" \
+  -d '{"countryCode": "BR", "riskScore": 62, "basePrice": 1000, "currency": "USD"}'
+```
+
+```json
+{
+  "countryCode": "BR",
+  "riskScore": 62,
+  "tier": "medium",
+  "adjustment": 3,
+  "multiplier": 1.03,
+  "basePrice": 1000,
+  "finalPrice": 1030.0,
+  "currency": "USD",
+  "generatedAtHttp": "..."
+}
+```
+
+---
+
+## Integração Sistêmica
+
+### Python
+
+```python
+import requests
+
+BASE_URL = "https://lf-worldbank-risk-pricing.onrender.com"
+
+# Score de risco único
+response = requests.get(f"{BASE_URL}/v1/risk-score", params={"country_code": "BR"})
+data = response.json()
+print(data["riskScore"], data["tier"])
+
+# Lote de países
+batch = requests.post(
+    f"{BASE_URL}/v1/risk-score/batch",
+    json={"country_codes": ["BR", "US", "DE"]}
+)
+for country in batch.json():
+    print(f"{country['countryCode']}: {country['riskScore']} ({country['tier']})")
+
+# Cotação de preço
+quote = requests.post(
+    f"{BASE_URL}/v1/pricing/quote",
+    json={"countryCode": "BR", "riskScore": 62, "basePrice": 1000, "currency": "USD"}
+)
+result = quote.json()
+print(f"Preço final: {result['finalPrice']} {result['currency']}")
+```
+
+### JavaScript / Node.js
+
+```javascript
+const BASE_URL = "https://lf-worldbank-risk-pricing.onrender.com";
+
+// Score de risco único
+const riskRes = await fetch(`${BASE_URL}/v1/risk-score?country_code=BR`);
+const risk = await riskRes.json();
+console.log(risk.riskScore, risk.tier);
+
+// Cotação de preço
+const quoteRes = await fetch(`${BASE_URL}/v1/pricing/quote`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    countryCode: "BR",
+    riskScore: 62,
+    basePrice: 1000,
+    currency: "USD"
+  })
+});
+const quote = await quoteRes.json();
+console.log(`Preço final: ${quote.finalPrice} ${quote.currency}`);
+```
+
+### curl (script shell)
+
+```bash
+#!/bin/bash
+BASE="https://lf-worldbank-risk-pricing.onrender.com"
+
+# Score de risco
+curl -s "$BASE/v1/risk-score?country_code=BR" | jq .
+
+# Cotação
+curl -s -X POST "$BASE/v1/pricing/quote" \
+  -H "Content-Type: application/json" \
+  -d '{"countryCode":"BR","riskScore":62,"basePrice":1000,"currency":"USD"}' | jq .
+```
+
+---
+
+## Documentação e Postman
+
+| Arquivo | Descrição |
+|---------|-----------|
+| [`docs/openapi.yaml`](docs/openapi.yaml) | Especificação OpenAPI 3.0 completa |
+| [`docs/postman_collection.json`](docs/postman_collection.json) | Coleção Postman com todos os endpoints |
+| [`docs/postman_environment.json`](docs/postman_environment.json) | Environment Postman (produção e local) |
+
+---
+
+## Como importar no Postman
+
+### Importar a coleção
+
+1. Abra o **Postman**
+2. Clique em **Import** (botão no canto superior esquerdo)
+3. Selecione **File** e escolha `docs/postman_collection.json`
+4. Clique em **Import**
+
+### Importar o environment
+
+1. No Postman, clique em **Environments** (ícone de olho ou painel lateral)
+2. Clique em **Import**
+3. Selecione `docs/postman_environment.json`
+4. Após importar, selecione o environment **lf-worldbank-risk-pricing** no seletor do canto superior direito
+5. Todas as requests usarão automaticamente a variável `{{base_url}}`
+
+### Trocar entre produção e local
+
+- Para usar produção: a variável `base_url` já está configurada como `https://lf-worldbank-risk-pricing.onrender.com`
+- Para usar local: edite o environment e mude o valor de `base_url` para `{{base_url_local}}` (`http://localhost:8000`)
+
+---
+
+## Attribution
+
+Os dados de risco-país utilizados neste projeto são derivados de indicadores públicos do **World Bank**, disponíveis sob a licença **Creative Commons Attribution 4.0 International (CC BY 4.0)**.
+
+- Fonte: [World Bank Open Data](https://data.worldbank.org)
+- Licença: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+
+---
+
+_Desenvolvido por Leandro Freire — Ref.: ISSUE-003_
