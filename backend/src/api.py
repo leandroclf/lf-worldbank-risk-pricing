@@ -93,6 +93,33 @@ def summarize_pricing_tiers_with_multiplier(entries):
     }
 
 
+def build_pricing_band_response(entries):
+    """Build portfolio pricing summary grouped by risk band."""
+    return {
+        "issue": "ISSUE-003",
+        "portfolio": {
+            "total": len(entries or []),
+            "bands": summarize_country_risk_bands(entries),
+            "avgAdjustmentPct": estimate_portfolio_adjustment_pct(entries),
+            "avgMultiplier": score_pricing_portfolio(entries)["avgMultiplier"] if entries else 1.0,
+        },
+        "sourceAttribution": "World Bank (CC BY 4.0)",
+    }
+
+
+def quote_regional_price(base_price, risk_score):
+    """Quote final regional price using risk-based multiplier."""
+    base = float(base_price)
+    multiplier = compute_pricing_multiplier(risk_score)
+    return {
+        "basePrice": round(base, 2),
+        "riskScore": float(risk_score),
+        "multiplier": multiplier,
+        "finalPrice": round(base * multiplier, 2),
+        "pricing": build_pricing_adjustment(risk_score),
+    }
+
+
 def count_high_risk_countries(entries, threshold=75):
     """Count countries with risk score above high-risk threshold."""
     total = len(entries or [])

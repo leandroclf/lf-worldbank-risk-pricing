@@ -52,6 +52,8 @@ from backend.src.api import summarize_pricing_tiers_with_multiplier
 from backend.src.api import count_high_risk_countries
 from backend.src.api import estimate_high_risk_rate
 from backend.src.api import calculate_multiplier_delta
+from backend.src.api import build_pricing_band_response
+from backend.src.api import quote_regional_price
 
 
 def test_build_pricing_decision():
@@ -159,6 +161,29 @@ def test_calculate_multiplier_delta():
 
 def test_calculate_multiplier_delta_zero_baseline():
     assert calculate_multiplier_delta([{"countryCode": "br", "riskScore": 80}], baseline_multiplier=0) == 0.0
+
+
+def test_build_pricing_band_response():
+    out = build_pricing_band_response([
+        {"countryCode": "br", "riskScore": 80},
+        {"countryCode": "cl", "riskScore": 55},
+        {"countryCode": "uy", "riskScore": 30},
+    ])
+    assert out["issue"] == "ISSUE-003"
+    assert out["portfolio"]["total"] == 3
+    assert out["portfolio"]["bands"] == {"high": 1, "medium": 1, "low": 1}
+    assert out["portfolio"]["avgAdjustmentPct"] == 3.67
+    assert out["portfolio"]["avgMultiplier"] == 1.0367
+    assert "World Bank" in out["sourceAttribution"]
+
+
+def test_quote_regional_price():
+    out = quote_regional_price(base_price=1000, risk_score=80)
+    assert out["basePrice"] == 1000.0
+    assert out["riskScore"] == 80.0
+    assert out["multiplier"] == 1.08
+    assert out["finalPrice"] == 1080.0
+    assert out["pricing"] == {"tier": "high", "adjustmentPct": 8}
 
 
 def test_aggregate_regional_risk_empty():

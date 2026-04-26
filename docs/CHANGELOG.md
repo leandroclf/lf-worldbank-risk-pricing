@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-02
+- **Mini-ciclo ISSUE-003 (pricing regional)**: adicionadas funções de agregação para bandas de risco e cotação regional
+- Nova função `build_pricing_band_response(entries)` para resumo do portfólio por banda (high/medium/low)
+- Nova função `quote_regional_price(base_price, risk_score)` para cálculo de preço final por multiplicador
+- Testes unitários adicionados em `tests/test_pricing_signal.py` para cobertura das novas funções
+- Validação local executada com `PYTHONPATH=. python3` (sanity check das novas funções)
+
 ## 2026-02-28
 - **ISSUE-003 concluída**: Merge da feature branch `feature/issue-003-worldbank-risk-score-api` para main
 - Implementado API endpoint `/v1/risk-score` (single e batch queries)
